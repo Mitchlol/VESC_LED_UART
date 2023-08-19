@@ -1,22 +1,20 @@
 #define FASTLED_INTERNAL
-#include "./src/FastLED/src/FastLED.h"
+#include "./src/Adafruit_NeoPixel/Adafruit_NeoPixel.h"
 
 // LED Type
-#define LED_TYPE WS2812
-#define COLOR_ORDER GRB
+#define LED_TYPE NEO_GRB
 
 // LED Wiring
 // Note: Forward in this instance means postive ERPM, which can actually be backwards if your motor direction is reversed.
-#define LED_PIN_FOREWARD 10
+#define LED_PIN_FORWARD 10
 #define LED_PIN_BACKWARD 11
 #define NUM_LEDS_FORWARD 10
 #define NUM_LEDS_BACKWARD 10
 #define STARTUP_FORWARD true
 
 // Color and brightness
-// For full color list see http://fastled.io/docs/3.1/struct_c_r_g_b.html
-#define COLOR_FORWARD CRGB::White
-#define COLOR_BACKWARD CRGB::Red
+#define COLOR_FORWARD 0xFFFFFFFF
+#define COLOR_BACKWARD 0x00FF0000
 #define BRIGHTNESS 255
 #define IDLE_BRIGHTNESS 10
 
@@ -24,8 +22,8 @@
 #define IDLE_DELAY 1000
 #define FADE_OUT_BY 10
 #define FADE_IN_BY 35
-#define FADE_DIRECTION_SPEED 75
-#define FADE_BATTERY_SPEED 75
+#define FADE_DIRECTION_SPEED 20
+#define FADE_BATTERY_SPEED 20
 
 // Battery Meter (li-ion only)
 #define BATTERY_SERIES_COUNT 20
@@ -37,45 +35,100 @@ class BalanceLEDs {
 
     // Runtime vars
     bool directionIsForward;
+    uint8_t currentBrightness;
     uint8_t targetBrightness;
     long idleTimer;
     bool isIdle;
     bool isIdleAndFaded;
-  
-    CRGB forward[NUM_LEDS_FORWARD];
-    CRGB backward[NUM_LEDS_BACKWARD];
+    uint32_t previousColorForward;
+    uint32_t previousColorBackward;
 
-    // Helper function that blends one uint8_t toward another by a given amount
-    void nblendU8TowardU8( uint8_t& cur, const uint8_t target, uint8_t amount){
-      if( cur == target) return;
-      
-      if( cur < target ) {
-        uint8_t delta = target - cur;
-        delta = scale8_video( delta, amount);
-        cur += delta;
-      } else {
-        uint8_t delta = cur - target;
-        delta = scale8_video( delta, amount);
-        cur -= delta;
+    Adafruit_NeoPixel forwardPixels{NUM_LEDS_FORWARD, LED_PIN_FORWARD, LED_TYPE + NEO_KHZ800};
+    Adafruit_NeoPixel backwardPixels{NUM_LEDS_BACKWARD, LED_PIN_BACKWARD, LED_TYPE + NEO_KHZ800};
+
+
+    void fadeForwardColor(uint32_t desiredColor, uint8_t fadeAmount){
+      uint8_t w = desiredColor >> 24;
+      uint8_t r = desiredColor >> 16;
+      uint8_t g = desiredColor >> 8;
+      uint8_t b = desiredColor;
+      uint8_t white = previousColorForward >> 24;
+      uint8_t red = previousColorForward >> 16;
+      uint8_t green = previousColorForward >> 8;
+      uint8_t blue = previousColorForward;
+      uint32_t color;
+      if(abs(w - white) < fadeAmount){
+        color |= (uint32_t)w << 24;
+      }else if(w > red){
+        color |= (uint32_t)(white + fadeAmount) << 24;
+      }else{
+        color |= (uint32_t)(white - fadeAmount) << 24;
       }
+      if(abs(r - red) < fadeAmount){
+        color |= (uint32_t)r << 16;
+      }else if(r > red){
+        color |= (uint32_t)(red + fadeAmount) << 16;
+      }else{
+        color |= (uint32_t)(red - fadeAmount) << 16;
+      }
+      if(abs(g - green) < fadeAmount){
+        color |= (uint32_t)g << 8;
+      }else if(g > green){
+        color |= (uint32_t)(green + fadeAmount) << 8;
+      }else{
+        color |= (uint32_t)(green - fadeAmount) << 8;
+      }
+      if(abs(b - blue) < fadeAmount){
+        color |= b;
+      }else if(b > blue){
+        color |= (blue + fadeAmount);
+      }else{
+        color |= (blue - fadeAmount);
+      }
+      forwardPixels.fill(color);
+      previousColorForward = color;
     }
 
-    // Blend one CRGB color toward another CRGB color by a given amount.
-    // Blending is linear, and done in the RGB color space.
-    // This function modifies 'cur' in place.
-    CRGB fadeTowardColor( CRGB& cur, const CRGB& target, uint8_t amount){
-      nblendU8TowardU8( cur.red,   target.red,   amount);
-      nblendU8TowardU8( cur.green, target.green, amount);
-      nblendU8TowardU8( cur.blue,  target.blue,  amount);
-      return cur;
-    }
-
-    // Fade an entire array of CRGBs toward a given background color by a given amount
-    // This function modifies the pixel array in place.
-    void fadeTowardColor( CRGB* L, uint16_t N, const CRGB& bgColor, uint8_t fadeAmount){
-      for( uint16_t i = 0; i < N; i++) {
-        fadeTowardColor( L[i], bgColor, fadeAmount);
+    void fadeBackwardColor(uint32_t desiredColor, uint8_t fadeAmount){
+      uint8_t w = desiredColor >> 24;
+      uint8_t r = desiredColor >> 16;
+      uint8_t g = desiredColor >> 8;
+      uint8_t b = desiredColor;
+      uint8_t white = previousColorBackward >> 24;
+      uint8_t red = previousColorBackward >> 16;
+      uint8_t green = previousColorBackward >> 8;
+      uint8_t blue = previousColorBackward;
+      uint32_t color;
+      if(abs(w - white) < fadeAmount){
+        color |= (uint32_t)w << 24;
+      }else if(w > red){
+        color |= (uint32_t)(white + fadeAmount) << 24;
+      }else{
+        color |= (uint32_t)(white - fadeAmount) << 24;
       }
+      if(abs(r - red) < fadeAmount){
+        color |= (uint32_t)r << 16;
+      }else if(r > red){
+        color |= (uint32_t)(red + fadeAmount) << 16;
+      }else{
+        color |= (uint32_t)(red - fadeAmount) << 16;
+      }
+      if(abs(g - green) < fadeAmount){
+        color |= (uint32_t)g << 8;
+      }else if(g > green){
+        color |= (uint32_t)(green + fadeAmount) << 8;
+      }else{
+        color |= (uint32_t)(green - fadeAmount) << 8;
+      }
+      if(abs(b - blue) < fadeAmount){
+        color |= b;
+      }else if(b > blue){
+        color |= (blue + fadeAmount);
+      }else{
+        color |= (blue - fadeAmount);
+      }
+      backwardPixels.fill(color);
+      previousColorBackward = color;
     }
 
     // Really basic linear voltage to percent calculation
@@ -93,23 +146,28 @@ class BalanceLEDs {
     
     void setup(){
 
-      // Configure LEDs
-      FastLED.addLeds<LED_TYPE, LED_PIN_FOREWARD, COLOR_ORDER>(forward, NUM_LEDS_FORWARD).setCorrection( TypicalLEDStrip );
-      FastLED.addLeds<LED_TYPE, LED_PIN_BACKWARD, COLOR_ORDER>(backward, NUM_LEDS_BACKWARD).setCorrection( TypicalLEDStrip );
-      FastLED.setBrightness(0.0);
+      // Init LEDs
+      forwardPixels.begin();
+      backwardPixels.begin();
+      forwardPixels.setBrightness(BRIGHTNESS);
+      backwardPixels.setBrightness(BRIGHTNESS);
 
       // Startup
       if(STARTUP_FORWARD){
         // Default to forward
         directionIsForward = true;
-        fadeTowardColor(forward, NUM_LEDS_FORWARD, COLOR_FORWARD, FADE_DIRECTION_SPEED);
-        fadeTowardColor(backward, NUM_LEDS_BACKWARD, COLOR_BACKWARD, FADE_DIRECTION_SPEED); 
+        forwardPixels.fill(COLOR_FORWARD);
+        backwardPixels.fill(COLOR_BACKWARD);
+        previousColorForward = COLOR_FORWARD;
+        previousColorBackward = COLOR_BACKWARD;
       }else{
         directionIsForward = false;
-        fadeTowardColor(forward, NUM_LEDS_FORWARD, COLOR_BACKWARD, FADE_DIRECTION_SPEED);
-        fadeTowardColor(backward, NUM_LEDS_BACKWARD, COLOR_FORWARD, FADE_DIRECTION_SPEED);
+        forwardPixels.fill(COLOR_BACKWARD);
+        backwardPixels.fill(COLOR_FORWARD);
+        previousColorForward = COLOR_BACKWARD;
+        previousColorBackward = COLOR_FORWARD;
       }
-      FastLED.show();
+
     }
 
     void loop(double erpm, double voltage){
@@ -135,21 +193,18 @@ class BalanceLEDs {
       if(!isIdle || BATTERY_DISPLAY_MODE == 0){
         // Regular display
         if(directionIsForward){
-          fadeTowardColor(forward, NUM_LEDS_FORWARD, COLOR_FORWARD, FADE_DIRECTION_SPEED);
-          fadeTowardColor(backward, NUM_LEDS_BACKWARD, COLOR_BACKWARD, FADE_DIRECTION_SPEED);
+          fadeForwardColor(COLOR_FORWARD, FADE_DIRECTION_SPEED);
+          fadeBackwardColor(COLOR_BACKWARD, FADE_DIRECTION_SPEED);
         }else{
-          fadeTowardColor(forward, NUM_LEDS_FORWARD, COLOR_BACKWARD, FADE_DIRECTION_SPEED);
-          fadeTowardColor(backward, NUM_LEDS_BACKWARD, COLOR_FORWARD, FADE_DIRECTION_SPEED);
+          fadeForwardColor(COLOR_BACKWARD, FADE_DIRECTION_SPEED);
+          fadeBackwardColor(COLOR_FORWARD, FADE_DIRECTION_SPEED);
         }
       }else if(isIdleAndFaded && BATTERY_DISPLAY_MODE == 1){
         // Green/yellow/red battery display
         float batteryPercent = getBatteryPercent(voltage);
-        CRGB color;
-        color.red = 255 * (1 - batteryPercent);
-        color.green = 255 * batteryPercent;
-        color.blue = 0;
-        fadeTowardColor(forward, NUM_LEDS_FORWARD, color, FADE_BATTERY_SPEED);
-        fadeTowardColor(backward, NUM_LEDS_BACKWARD, color, FADE_BATTERY_SPEED);
+        uint32_t color =  forwardPixels.Color(255 * (1 - batteryPercent), 255 * batteryPercent, 0);
+        fadeForwardColor(color, FADE_BATTERY_SPEED);
+        fadeBackwardColor(color, FADE_BATTERY_SPEED);
       }
 
       if(isIdle){
@@ -161,14 +216,18 @@ class BalanceLEDs {
       
 
       // Fade Brightness
-      if(FastLED.getBrightness() > targetBrightness){
-        FastLED.setBrightness(max(FastLED.getBrightness() - FADE_OUT_BY, targetBrightness));
-      }else if(FastLED.getBrightness() < targetBrightness){
-        FastLED.setBrightness(min(FastLED.getBrightness() + FADE_IN_BY, targetBrightness));
+      currentBrightness = forwardPixels.getBrightness();
+      if(currentBrightness > targetBrightness){
+        forwardPixels.setBrightness(max(currentBrightness - FADE_OUT_BY, targetBrightness));
+        backwardPixels.setBrightness(max(currentBrightness - FADE_OUT_BY, targetBrightness));
+      }else if(currentBrightness < targetBrightness){
+        forwardPixels.setBrightness(min(currentBrightness + FADE_IN_BY, targetBrightness));
+        backwardPixels.setBrightness(min(currentBrightness + FADE_IN_BY, targetBrightness));
       }else if (isIdle){
         isIdleAndFaded = true;
       }
-
-      FastLED.show();
+      
+      forwardPixels.show();
+      backwardPixels.show();
     }
 };
