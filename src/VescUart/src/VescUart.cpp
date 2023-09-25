@@ -214,7 +214,39 @@ bool VescUart::processReadPacket(uint8_t * message) {
 			data.id					= message[index++];								// 1 byte  - app_get_configuration()->controller_id	
 
 			return true;
+		break;
 
+		case COMM_CUSTOM_APP_DATA:
+			if(message[index++] != 101 || message[index++] != 1){
+				return false;
+			}
+			floatData.pidValue = buffer_get_float32_auto(message, &index);
+			floatData.pitch = buffer_get_float32_auto(message, &index);
+			floatData.roll = buffer_get_float32_auto(message, &index);
+			
+			floatData.state = message[index++]; // uint 8
+			floatData.setpointAdjustmentType = floatData.state >> 4;
+			floatData.state = floatData.state & 0b00001111;
+			
+			floatData.switchState = message[index++]; // uint 8
+			floatData.beepReason = floatData.switchState >> 4;
+			floatData.switchState = floatData.switchState & 0b00001111;
+
+			floatData.adc1 = buffer_get_float32_auto(message, &index);
+			floatData.adc2 = buffer_get_float32_auto(message, &index);
+			floatData.floatSetpoint = buffer_get_float32_auto(message, &index);
+			floatData.floatAtr = buffer_get_float32_auto(message, &index);
+			floatData.floatBraketilt = buffer_get_float32_auto(message, &index);
+			floatData.floatTorquetilt = buffer_get_float32_auto(message, &index);
+			floatData.floatTurntilt = buffer_get_float32_auto(message, &index);
+			floatData.floatInputtilt = buffer_get_float32_auto(message, &index);
+			floatData.truePitch = buffer_get_float32_auto(message, &index);
+			floatData.filteredCurrent = buffer_get_float32_auto(message, &index);
+			floatData.floatAccDiff = buffer_get_float32_auto(message, &index);
+			floatData.appliedBoosterCurrent = buffer_get_float32_auto(message, &index);
+			floatData.motorCurrent = buffer_get_float32_auto(message, &index);
+			floatData.throttleVal = buffer_get_float32_auto(message, &index);
+			return true;
 		break;
 
 		/* case COMM_GET_VALUES_SELECTIVE:
@@ -282,6 +314,31 @@ bool VescUart::getVescValues(uint8_t canId) {
 	}
 	return false;
 }
+
+bool VescUart::getFloatValues(void) {
+
+	if (debugPort!=NULL){
+		debugPort->println("Command: COMM_CUSTOM_APP_DATA ");
+	}
+
+	int32_t index = 0;
+	int payloadSize = 3;
+	uint8_t payload[payloadSize];
+	payload[index++] = { COMM_CUSTOM_APP_DATA };
+	payload[index++] = 101;
+	payload[index++] = 0x1;
+
+	packSendPayload(payload, payloadSize);
+
+	uint8_t message[256];
+	int messageLength = receiveUartMessage(message);
+
+	if (messageLength > 55) {
+		return processReadPacket(message); 
+	}
+	return false;
+}
+
 void VescUart::setNunchuckValues() {
 	return setNunchuckValues(0);
 }

@@ -10,23 +10,48 @@ class VescUart
 {
 
 	/** Struct to store the telemetry data returned by the VESC */
-	struct dataPackage {
-       float avgMotorCurrent;
-        float avgInputCurrent;
-        float dutyCycleNow;
-        float rpm;
-        float inpVoltage;
-        float ampHours;
-        float ampHoursCharged;
-        float wattHours;
-        float wattHoursCharged;
-        long tachometer;
-        long tachometerAbs;
-        float tempMosfet;
-        float tempMotor;
-        float pidPos;
-        uint8_t id;
-        mc_fault_code error; 
+        struct dataPackage {
+                float avgMotorCurrent;
+                float avgInputCurrent;
+                float dutyCycleNow;
+                float rpm;
+                float inpVoltage;
+                float ampHours;
+                float ampHoursCharged;
+                float wattHours;
+                float wattHoursCharged;
+                long tachometer;
+                long tachometerAbs;
+                float tempMosfet;
+                float tempMotor;
+                float pidPos;
+                uint8_t id;
+                mc_fault_code error; 
+	};
+
+        /** Struct to store the float package data returned by the VESC */
+	struct floatPackage {
+                float pidValue; // Float32
+                float pitch; // Float32
+                float roll; // Float32
+                uint8_t state; // uint 8
+                uint8_t setpointAdjustmentType; // sent with state
+                uint8_t switchState; // uint 8
+                uint8_t beepReason; // sent with switch state
+                float adc1;
+                float adc2;
+                float floatSetpoint;
+                float floatAtr;
+                float floatBraketilt;
+                float floatTorquetilt;
+                float floatTurntilt;
+                float floatInputtilt;
+                float truePitch;
+                float filteredCurrent;
+                float floatAccDiff;
+                float appliedBoosterCurrent;
+                float motorCurrent;
+                float throttleVal;
 	};
 
 	/** Struct to hold the nunchuck values to send over UART */
@@ -37,10 +62,10 @@ class VescUart
 		bool lowerButton; // valLowerButton
 	};
 
-    struct FWversionPackage {
-        uint8_t major;
-        uint8_t minor;
-    };
+        struct FWversionPackage {
+                uint8_t major;
+                uint8_t minor;
+        };
 
 	//Timeout - specifies how long the function will wait for the vesc to respond
 	const uint32_t _TIMEOUT;
@@ -52,7 +77,10 @@ class VescUart
 		VescUart(uint32_t timeout_ms = 100);
 
 		/** Variabel to hold measurements returned from VESC */
-		dataPackage data; 
+		dataPackage data;
+
+                /** Variabel to hold measurements returned from VESC */
+		floatPackage floatData; 
 
 		/** Variabel to hold nunchuck values */
 		nunchuckPackage nunchuck; 
@@ -101,6 +129,13 @@ class VescUart
          * @return     True if successfull otherwise false
          */
         bool getVescValues(uint8_t canId);
+
+        /**
+         * @brief      Sends a command to VESC and stores the returned data
+         *
+         * @return     True if successfull otherwise false
+         */
+        bool getFloatValues(void);
 
         /**
          * @brief      Sends values for joystick and buttons to the nunchuck app
