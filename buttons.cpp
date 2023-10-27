@@ -7,7 +7,6 @@ class Buttons {
     Config& config;
     long timer;
     int previousSwitchState;
-    int pressCount;
  
   public:
     Buttons(Config& mConfig): config(mConfig) {}  
@@ -15,14 +14,22 @@ class Buttons {
       
     }
     void loop(uint8_t switchState, float pitch){
-
-      // Clear press count & state when idle
-      if(millis() - timer > 1000 || pitch < 70 || pitch > 110){
+      // Block input when angle is invalid
+      if(pitch < 70 || pitch > 110){
         previousSwitchState = 0;
-        pressCount = 0;
+        config.pressCount = 0;
+        config.longPressCount = 0;
+        return;
       }
 
-      // Press detected but we dont know what it ise yet
+      // Clear press count & state when idle
+      if(millis() - timer > 1000){
+        previousSwitchState = 0;
+        config.pressCount = 0;
+        config.longPressCount = 0;
+      }
+
+      // Press detected but we dont know what it is yet
       if(previousSwitchState == 0 && switchState == 1){
         previousSwitchState = 1;
         timer = millis();
@@ -31,39 +38,73 @@ class Buttons {
       // Single press confirmed upon release, increment counter
       if(previousSwitchState == 1 && switchState == 0){
         previousSwitchState = 0;
-        pressCount ++;
+        config.pressCount ++;
         timer = millis();
       }
 
       // Keep togging brightness on a dual hold after a single press
-      if(pressCount == 1 && switchState == 2 && previousSwitchState != 2){
+      if(config.pressCount == 1 && switchState == 2 && previousSwitchState != 2){
         timer = millis();
         previousSwitchState = 2;
+        config.longPressCount++;
         config.toggleBrightness();
-      }else if(pressCount == 1 && switchState == 2 && millis() - timer > 500){
+      }else if(config.pressCount == 1 && switchState == 2 && millis() - timer > 500){
         timer = millis();
+        config.longPressCount++;
         config.toggleBrightness();
       }
 
       // Forward color
-      if(pressCount == 2 && switchState == 2 && previousSwitchState != 2){
+      if(config.pressCount == 2 && switchState == 2 && previousSwitchState != 2){
         timer = millis();
         previousSwitchState = 2;
+        config.longPressCount++;
         config.toggleForwardColor();
-      }else if(pressCount == 2 && switchState == 2 && millis() - timer > 500){
+      }else if(config.pressCount == 2 && switchState == 2 && millis() - timer > 500){
         timer = millis();
+        config.longPressCount++;
         config.toggleForwardColor();
       }
 
       // Backwards color
-      if(pressCount == 3 && switchState == 2 && previousSwitchState != 2){
+      if(config.pressCount == 3 && switchState == 2 && previousSwitchState != 2){
         timer = millis();
         previousSwitchState = 2;
+        config.longPressCount++;
         config.toggleBackwardsColor();
-      }else if(pressCount == 3 && switchState == 2 && millis() - timer > 500){
+      }else if(config.pressCount == 3 && switchState == 2 && millis() - timer > 500){
         timer = millis();
+        config.longPressCount++;
         config.toggleBackwardsColor();
       }
 
+      //Voltage Display Mode
+      if(config.pressCount == 4 && switchState == 2 && previousSwitchState != 2){
+        timer = millis();
+        previousSwitchState = 2;
+        config.longPressCount++;
+        config.toggleIdle();
+      }else if(config.pressCount == 4 && switchState == 2 && millis() - timer > 500){
+        timer = millis();
+        config.longPressCount++;
+        config.toggleIdle();
+      }
+
+      // Cell count
+      if(config.pressCount == 5 && switchState == 2 && previousSwitchState != 2){
+        timer = millis();
+        previousSwitchState = 2;
+        config.longPressCount++;
+        config.setBatteySeries(1);
+      }else if(config.pressCount == 5 && switchState == 2 && millis() - timer > 500){
+        timer = millis();
+        config.longPressCount++;
+        config.setBatteySeries(config.batterySeriesState + 1);
+      }
+
+      
+      // TODO:
+      // LED Type
+      // LED Count
     }
 };
