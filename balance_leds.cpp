@@ -3,20 +3,15 @@
 #include "config.cpp"
 #include "voltagetable.cpp"
 
-// LED Type
-#define LED_TYPE NEO_GRBW
-
 // LED Wiring
 // Note: Forward in this instance means postive ERPM, which can actually be backwards if your motor direction is reversed.
 #define LED_PIN_FORWARD 10
 #define LED_PIN_BACKWARD 11
-#define NUM_LEDS_FORWARD 10
-#define NUM_LEDS_BACKWARD 10
 #define STARTUP_FORWARD true
 
 // Colors and brightnesses (User selectable between 4 idle/active brightness levels, and 7 colors, these can be set to anything)
 #define COLORS (unsigned long[]){0xFFFFFFFF, 0x000000FF, 0x0000FFFF, 0x0000FF00, 0x00FFFF00, 0x00FF0000, 0x00FF00FF}
-#define BRIGHTNESS (int[]){0xFF, 0x88, 0x44, 0x00}
+#define BRIGHTNESS (int[]){0xFF, 0x88, 0x04, 0x00}
 #define IDLE_BRIGHTNESS (int[]){0x0A, 0x05, 0x01, 0x00}
 
 // Timings
@@ -29,8 +24,8 @@
 class BalanceLEDs {
   private:
     Config& config;
-    Adafruit_NeoPixel forwardPixels{NUM_LEDS_FORWARD, LED_PIN_FORWARD, LED_TYPE + NEO_KHZ800};
-    Adafruit_NeoPixel backwardPixels{NUM_LEDS_BACKWARD, LED_PIN_BACKWARD, LED_TYPE + NEO_KHZ800};
+    Adafruit_NeoPixel *forwardPixels;
+    Adafruit_NeoPixel *backwardPixels;
     VoltageTable voltageTable;
 
     // Runtime vars
@@ -84,7 +79,7 @@ class BalanceLEDs {
       }else{
         color |= (blue - fadeAmount);
       }
-      forwardPixels.fill(color);
+      forwardPixels->fill(color);
       previousColorForward = color;
     }
 
@@ -126,7 +121,7 @@ class BalanceLEDs {
       }else{
         color |= (blue - fadeAmount);
       }
-      backwardPixels.fill(color);
+      backwardPixels->fill(color);
       previousColorBackward = color;
     }
 
@@ -136,10 +131,17 @@ class BalanceLEDs {
     void setup(){
 
       // Init LEDs
-      forwardPixels.begin();
-      backwardPixels.begin();
-      forwardPixels.setBrightness(0);
-      backwardPixels.setBrightness(0);
+      if(config.ledTypeState == 0){
+        forwardPixels = new Adafruit_NeoPixel{config.ledCountState, LED_PIN_FORWARD, NEO_GRBW + NEO_KHZ800};
+        backwardPixels = new Adafruit_NeoPixel{config.ledCountState, LED_PIN_BACKWARD, NEO_GRBW + NEO_KHZ800};
+      }else{
+        forwardPixels = new Adafruit_NeoPixel{config.ledCountState, LED_PIN_FORWARD, NEO_GRB + NEO_KHZ800};
+        backwardPixels = new Adafruit_NeoPixel{config.ledCountState, LED_PIN_BACKWARD, NEO_GRB + NEO_KHZ800};
+      }
+      forwardPixels->begin();
+      backwardPixels->begin();
+      forwardPixels->setBrightness(0);
+      backwardPixels->setBrightness(0);
       previousBrightnessState = config.brightnessState;
       previousForwardColorState = config.forwardColorState;
       previousBackwardColorState = config.backwardColorState;
@@ -148,14 +150,14 @@ class BalanceLEDs {
       if(STARTUP_FORWARD){
         // Default to forward
         directionIsForward = true;
-        forwardPixels.fill(COLORS[config.forwardColorState]);
-        backwardPixels.fill(COLORS[config.backwardColorState]);
+        forwardPixels->fill(COLORS[config.forwardColorState]);
+        backwardPixels->fill(COLORS[config.backwardColorState]);
         previousColorForward = COLORS[config.forwardColorState];
         previousColorBackward = COLORS[config.backwardColorState];
       }else{
         directionIsForward = false;
-        forwardPixels.fill(COLORS[config.backwardColorState]);
-        backwardPixels.fill(COLORS[config.forwardColorState]);
+        forwardPixels->fill(COLORS[config.backwardColorState]);
+        backwardPixels->fill(COLORS[config.forwardColorState]);
         previousColorForward = COLORS[config.backwardColorState];
         previousColorBackward = COLORS[config.forwardColorState];
       }
@@ -167,20 +169,20 @@ class BalanceLEDs {
       // Menu display
       if(config.pressCount > 0){
         if(config.longPressCount == 0){
-          forwardPixels.clear();
-          backwardPixels.clear();
-          forwardPixels.setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels.setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->clear();
+          backwardPixels->clear();
+          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
           for(int i = 0; i < config.pressCount; i++){
-            forwardPixels.setPixelColor(i, forwardPixels.Color(100, 100, 100));
-            backwardPixels.setPixelColor(i, backwardPixels.Color(100, 100, 100));
-            if(i == 6){
-              forwardPixels.setPixelColor(i, forwardPixels.Color(0, 0, 0));
-              backwardPixels.setPixelColor(i, backwardPixels.Color(0, 0, 0));  
+            forwardPixels->setPixelColor(i, forwardPixels->Color(100, 100, 100));
+            backwardPixels->setPixelColor(i, backwardPixels->Color(100, 100, 100));
+            if(i >= 7){
+              forwardPixels->setPixelColor(i, forwardPixels->Color(100, 0, 0));
+              backwardPixels->setPixelColor(i, backwardPixels->Color(100, 0, 0));  
             }
           }  
-          forwardPixels.show();
-          backwardPixels.show();
+          forwardPixels->show();
+          backwardPixels->show();
           return;
         }else if(config.pressCount == 1 || config.pressCount == 2 || config.pressCount == 3){
           if(config.pressCount == 3){
@@ -189,32 +191,60 @@ class BalanceLEDs {
             directionIsForward = true;
           }
         }else if(config.pressCount == 4){
-          forwardPixels.clear();
-          backwardPixels.clear();
-          forwardPixels.setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels.setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->clear();
+          backwardPixels->clear();
+          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
           for(int i = 0; i <= config.idleDisplayState; i++){
-            forwardPixels.setPixelColor(i, forwardPixels.Color(0, 100, 0));
-            backwardPixels.setPixelColor(i, backwardPixels.Color(0, 100, 0));
+            forwardPixels->setPixelColor(i, forwardPixels->Color(0, 100, 0));
+            backwardPixels->setPixelColor(i, backwardPixels->Color(0, 100, 0));
           }  
-          forwardPixels.show();
-          backwardPixels.show();
+          forwardPixels->show();
+          backwardPixels->show();
           return;
         }else if(config.pressCount == 5){
-          forwardPixels.clear();
-          backwardPixels.clear();
-          forwardPixels.setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels.setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->clear();
+          backwardPixels->clear();
+          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
           int leds = config.batterySeriesState % 5;
           if(leds == 0){
             leds = 5;
           }
           for(int i = 0; i <= leds - 1; i++){
-            forwardPixels.setPixelColor(i, forwardPixels.Color(0, 0, 100));
-            backwardPixels.setPixelColor(i, backwardPixels.Color(0, 0, 100));
+            forwardPixels->setPixelColor(i, forwardPixels->Color(0, 0, 100));
+            backwardPixels->setPixelColor(i, backwardPixels->Color(0, 0, 100));
           }  
-          forwardPixels.show();
-          backwardPixels.show();
+          forwardPixels->show();
+          backwardPixels->show();
+          return;
+        }else if(config.pressCount == 6){
+          forwardPixels->clear();
+          backwardPixels->clear();
+          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          int leds = config.ledCountState % 5;
+          if(leds == 0){
+            leds = 5;
+          }
+          for(int i = 0; i <= leds - 1; i++){
+            forwardPixels->setPixelColor(i, forwardPixels->Color(100, 0, 0));
+            backwardPixels->setPixelColor(i, backwardPixels->Color(100, 0, 0));
+          }  
+          forwardPixels->show();
+          backwardPixels->show();
+          return;
+        }else if(config.pressCount == 7){
+          forwardPixels->clear();
+          backwardPixels->clear();
+          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          for(int i = 0; i <= config.ledTypeState; i++){
+            forwardPixels->setPixelColor(i, forwardPixels->Color(100, 100, 0));
+            backwardPixels->setPixelColor(i, backwardPixels->Color(100, 100, 0));
+          }  
+          forwardPixels->show();
+          backwardPixels->show();
           return;
         }
       }
@@ -268,23 +298,23 @@ class BalanceLEDs {
       }else if(isIdleAndFaded && config.idleDisplayState == 1){
         // Green/yellow/red battery display
         float batteryPercent = voltageTable.voltsToPercent5(voltage / config.batterySeriesState);
-        uint32_t color =  forwardPixels.Color(255 * (1 - batteryPercent), 255 * batteryPercent, 0);
+        uint32_t color =  forwardPixels->Color(255 * (1 - batteryPercent), 255 * batteryPercent, 0);
         fadeForwardColor(color, FADE_BATTERY_SPEED);
         fadeBackwardColor(color, FADE_BATTERY_SPEED);
       }else if(isIdleAndFaded && config.idleDisplayState == 2){
         // Green/yellow/red fade with percent illuminated.
         float batteryPercent = voltageTable.voltsToPercent100(voltage / config.batterySeriesState);
-        uint32_t color =  forwardPixels.Color(255 * (1 - batteryPercent), 255 * batteryPercent, 0);
+        uint32_t color =  forwardPixels->Color(255 * (1 - batteryPercent), 255 * batteryPercent, 0);
         fadeForwardColor(color, FADE_BATTERY_SPEED);
         fadeBackwardColor(color, FADE_BATTERY_SPEED);
-        for(int i = roundf(batteryPercent * NUM_LEDS_FORWARD); i < NUM_LEDS_FORWARD; i++){
-          forwardPixels.setPixelColor(i, forwardPixels.Color(0, 0, 0));
-          backwardPixels.setPixelColor(i, backwardPixels.Color(0, 0, 0));  
+        for(int i = roundf(batteryPercent * config.ledCountState); i < config.ledCountState; i++){
+          forwardPixels->setPixelColor(i, forwardPixels->Color(0, 0, 0));
+          backwardPixels->setPixelColor(i, backwardPixels->Color(0, 0, 0));  
         }
       }else if(isIdleAndFaded && config.idleDisplayState == 2){
         // Idle Off
-        forwardPixels.clear();
-        backwardPixels.clear();
+        forwardPixels->clear();
+        backwardPixels->clear();
       }
 
       if(isIdle){
@@ -297,22 +327,22 @@ class BalanceLEDs {
       // Fade Brightness
       if(previousBrightnessState != config.brightnessState){
         previousBrightnessState = config.brightnessState;
-        forwardPixels.setBrightness(targetBrightness);
-        backwardPixels.setBrightness(targetBrightness);
+        forwardPixels->setBrightness(targetBrightness);
+        backwardPixels->setBrightness(targetBrightness);
       }else{
-        currentBrightness = forwardPixels.getBrightness();
+        currentBrightness = forwardPixels->getBrightness();
         if(currentBrightness > targetBrightness){
-          forwardPixels.setBrightness(max(currentBrightness - FADE_OUT_BY, targetBrightness));
-          backwardPixels.setBrightness(max(currentBrightness - FADE_OUT_BY, targetBrightness));
+          forwardPixels->setBrightness(max(currentBrightness - FADE_OUT_BY, targetBrightness));
+          backwardPixels->setBrightness(max(currentBrightness - FADE_OUT_BY, targetBrightness));
         }else if(currentBrightness < targetBrightness){
-          forwardPixels.setBrightness(min(currentBrightness + FADE_IN_BY, targetBrightness));
-          backwardPixels.setBrightness(min(currentBrightness + FADE_IN_BY, targetBrightness));
+          forwardPixels->setBrightness(min(currentBrightness + FADE_IN_BY, targetBrightness));
+          backwardPixels->setBrightness(min(currentBrightness + FADE_IN_BY, targetBrightness));
         }else if (isIdle){
           isIdleAndFaded = true;
         }
       }
       
-      forwardPixels.show();
-      backwardPixels.show();
+      forwardPixels->show();
+      backwardPixels->show();
     }
 };

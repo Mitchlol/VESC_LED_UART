@@ -13,9 +13,15 @@
 #define DEFAULT_IDLE_DISPLAY_MODE 1
 #define DEFAULT_BATTERY_SERIES_COUNT 20
 
+// LEDs
+#define DEFAULT_LED_COUNT 7
+#define DEFAULT_LED_TYPE 0
+
+// Options
 #define BRIGHTNESS_MODES 4
 #define COLOR_MODES 7
 #define IDLE_MODES 4
+#define LED_TYPES 2
 
 class Config {
   private:
@@ -26,6 +32,8 @@ class Config {
     uint8_t backwardColorState;
     uint8_t idleDisplayState;
     uint8_t batterySeriesState;
+    unsigned int ledCountState;
+    uint8_t ledTypeState;
 
     uint8_t pressCount;
     uint8_t longPressCount;
@@ -56,6 +64,16 @@ class Config {
         batterySeriesState = DEFAULT_BATTERY_SERIES_COUNT;
       }
 
+      ledCountState = EEPROM.read(5);
+      if(ledCountState > 40 || ledCountState < 7){
+        ledCountState = DEFAULT_LED_COUNT;
+      }
+
+      ledTypeState = EEPROM.read(6);
+      if(ledTypeState > LED_TYPES){
+        ledTypeState = DEFAULT_LED_TYPE;
+      }
+
     }
     void loop(){
       
@@ -81,12 +99,22 @@ class Config {
       EEPROM.write(3, idleDisplayState);
     }
 
-    void setBatteySeries(int newValue){
-      batterySeriesState = newValue;
+    void setBatterySeries(int newValue){
+      batterySeriesState = newValue % 41;
       EEPROM.write(4, batterySeriesState);
     }
 
-    
+    void setLedCount(int newValue){
+      ledCountState = newValue % 41;
+      if(ledCountState > 7){
+        EEPROM.write(5, ledCountState); 
+      }
+    }
+
+    void toggleLedType(){
+      ledTypeState = (ledTypeState + 1) % LED_TYPES;
+      EEPROM.write(6, ledTypeState);
+    }
 };
 
 #endif

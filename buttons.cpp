@@ -95,16 +95,35 @@ class Buttons {
         timer = millis();
         previousSwitchState = 2;
         config.longPressCount++;
-        config.setBatteySeries(1);
+        config.setBatterySeries(1);
       }else if(config.pressCount == 5 && switchState == 2 && millis() - timer > 500){
         timer = millis();
         config.longPressCount++;
-        config.setBatteySeries(config.batterySeriesState + 1);
+        config.setBatterySeries(config.batterySeriesState + 1);
       }
 
+      // LED count
+      if(config.pressCount == 6 && switchState == 2 && previousSwitchState != 2){
+        timer = millis();
+        previousSwitchState = 2;
+        config.longPressCount++;
+        config.setLedCount(1);
+      }else if(config.pressCount == 6 && switchState == 2 && millis() - timer > 500){
+        timer = millis();
+        config.longPressCount++;
+        config.setLedCount(config.ledCountState + 1);
+      }
       
-      // TODO:
       // LED Type
-      // LED Count
+      if(config.pressCount == 7 && switchState == 2 && previousSwitchState != 2){
+        timer = millis();
+        previousSwitchState = 2;
+        config.longPressCount++;
+        config.toggleLedType();
+      }else if(config.pressCount == 7 && switchState == 2 && millis() - timer > 500){
+        timer = millis();
+        config.longPressCount++;
+        config.toggleLedType();
+      }
     }
 };
