@@ -53,7 +53,7 @@ class BalanceLEDs {
       uint32_t color;
       if(abs(w - white) < fadeAmount){
         color |= (uint32_t)w << 24;
-      }else if(w > red){
+      }else if(w > white){
         color |= (uint32_t)(white + fadeAmount) << 24;
       }else{
         color |= (uint32_t)(white - fadeAmount) << 24;
@@ -95,7 +95,7 @@ class BalanceLEDs {
       uint32_t color;
       if(abs(w - white) < fadeAmount){
         color |= (uint32_t)w << 24;
-      }else if(w > red){
+      }else if(w > white){
         color |= (uint32_t)(white + fadeAmount) << 24;
       }else{
         color |= (uint32_t)(white - fadeAmount) << 24;
