@@ -119,6 +119,7 @@ struct VoltageTable{
 
   float voltsToPercent100(float cellvoltage){
     int v = cellvoltage * 100;
+    v = v - 200;
     if(v < 89){
       return 0.0;
     }else if(v < 94){

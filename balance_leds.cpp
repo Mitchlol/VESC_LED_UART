@@ -11,7 +11,7 @@
 
 // Colors and brightnesses (User selectable between 4 idle/active brightness levels, and 7 colors, these can be set to anything)
 #define COLORS (unsigned long[]){0xFFFFFFFF, 0x000000FF, 0x0000FFFF, 0x0000FF00, 0x00FFFF00, 0x00FF0000, 0x00FF00FF}
-#define BRIGHTNESS (int[]){0xFF, 0x88, 0x04, 0x00}
+#define BRIGHTNESS (int[]){0xFF, 0x88, 0x22, 0x00}
 #define IDLE_BRIGHTNESS (int[]){0x0A, 0x05, 0x01, 0x00}
 
 // Timings
@@ -166,7 +166,11 @@ class BalanceLEDs {
 
     void loop(uint8_t switchState, double erpm, double voltage){
 
-      // Menu display
+      
+      //**************
+      //*Menu Display*
+      //**************
+
       if(config.pressCount > 0){
         if(config.longPressCount == 0){
           forwardPixels->clear();
