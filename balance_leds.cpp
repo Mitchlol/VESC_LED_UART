@@ -175,8 +175,8 @@ class BalanceLEDs {
         if(config.longPressCount == 0){
           forwardPixels->clear();
           backwardPixels->clear();
-          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->setBrightness(0x0A);
+          backwardPixels->setBrightness(0x0A);
           for(int i = 0; i < config.pressCount; i++){
             forwardPixels->setPixelColor(i, forwardPixels->Color(100, 100, 100));
             backwardPixels->setPixelColor(i, backwardPixels->Color(100, 100, 100));
@@ -197,8 +197,8 @@ class BalanceLEDs {
         }else if(config.pressCount == 4){
           forwardPixels->clear();
           backwardPixels->clear();
-          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->setBrightness(0x0A);
+          backwardPixels->setBrightness(0x0A);
           for(int i = 0; i <= config.idleDisplayState; i++){
             forwardPixels->setPixelColor(i, forwardPixels->Color(0, 100, 0));
             backwardPixels->setPixelColor(i, backwardPixels->Color(0, 100, 0));
@@ -209,8 +209,8 @@ class BalanceLEDs {
         }else if(config.pressCount == 5){
           forwardPixels->clear();
           backwardPixels->clear();
-          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->setBrightness(0x0A);
+          backwardPixels->setBrightness(0x0A);
           int leds = config.batterySeriesState % 5;
           if(leds == 0){
             leds = 5;
@@ -225,8 +225,8 @@ class BalanceLEDs {
         }else if(config.pressCount == 6){
           forwardPixels->clear();
           backwardPixels->clear();
-          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->setBrightness(0x0A);
+          backwardPixels->setBrightness(0x0A);
           int leds = config.ledCountState % 5;
           if(leds == 0){
             leds = 5;
@@ -241,8 +241,8 @@ class BalanceLEDs {
         }else if(config.pressCount == 7){
           forwardPixels->clear();
           backwardPixels->clear();
-          forwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
-          backwardPixels->setBrightness(BRIGHTNESS[config.brightnessState]);
+          forwardPixels->setBrightness(0x0A);
+          backwardPixels->setBrightness(0x0A);
           for(int i = 0; i <= config.ledTypeState; i++){
             forwardPixels->setPixelColor(i, forwardPixels->Color(100, 100, 0));
             backwardPixels->setPixelColor(i, backwardPixels->Color(100, 100, 0));
@@ -326,10 +326,12 @@ class BalanceLEDs {
       }else{
         targetBrightness = BRIGHTNESS[config.brightnessState];
       }
-      
 
       // Fade Brightness
-      if(previousBrightnessState != config.brightnessState){
+      if(config.pressCount > 1){ // Override brightness if in menu but not in brightness display
+        forwardPixels->setBrightness(0x0A);
+        backwardPixels->setBrightness(0x0A);
+      }else if(previousBrightnessState != config.brightnessState){
         previousBrightnessState = config.brightnessState;
         forwardPixels->setBrightness(targetBrightness);
         backwardPixels->setBrightness(targetBrightness);
