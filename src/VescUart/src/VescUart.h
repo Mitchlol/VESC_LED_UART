@@ -9,6 +9,7 @@
 class VescUart
 {
 
+        public:
 	/** Struct to store the telemetry data returned by the VESC */
         struct dataPackage {
                 float avgMotorCurrent;
@@ -52,6 +53,17 @@ class VescUart
                 float appliedBoosterCurrent;
                 float motorCurrent;
                 float throttleVal;
+                float batteryPercent;
+                uint8_t led_type;
+                uint8_t led_status_count;
+                uint8_t led_forward_count;
+                uint8_t led_rear_count;
+                uint8_t led_brightness;
+                uint8_t led_brightness_idle;
+                uint8_t led_mode;
+                uint8_t led_mode_idle;
+                uint8_t led_status_brightness;
+                uint8_t led_status_mode;
 	};
 
 	/** Struct to hold the nunchuck values to send over UART */
@@ -70,20 +82,19 @@ class VescUart
 	//Timeout - specifies how long the function will wait for the vesc to respond
 	const uint32_t _TIMEOUT;
 
-	public:
-		/**
-		 * @brief      Class constructor
-		 */
-		VescUart(uint32_t timeout_ms = 100);
+        /**
+         * @brief      Class constructor
+         */
+        VescUart(uint32_t timeout_ms = 100);
 
-		/** Variabel to hold measurements returned from VESC */
-		dataPackage data;
+        /** Variabel to hold measurements returned from VESC */
+        dataPackage data;
 
-                /** Variabel to hold measurements returned from VESC */
-		floatPackage floatData; 
+        /** Variabel to hold measurements returned from VESC */
+        floatPackage floatData; 
 
-		/** Variabel to hold nunchuck values */
-		nunchuckPackage nunchuck; 
+        /** Variabel to hold nunchuck values */
+        nunchuckPackage nunchuck; 
 
        /** Variable to hold firmware version */
         FWversionPackage fw_version; 
@@ -136,6 +147,20 @@ class VescUart
          * @return     True if successfull otherwise false
          */
         bool getFloatValues(void);
+
+        /**
+         * @brief      Sends a command to VESC and stores the returned data
+         *
+         * @return     True if successfull otherwise false
+         */
+        bool getFloatBattery(void);
+
+        /**
+         * @brief      Sends a command to VESC and stores the returned data
+         *
+         * @return     True if successfull otherwise false
+         */
+        bool getFloatLeds(void);
 
         /**
          * @brief      Sends values for joystick and buttons to the nunchuck app

@@ -177,7 +177,6 @@ int VescUart::packSendPayload(uint8_t * payload, int lenPay) {
 	return count;
 }
 
-
 bool VescUart::processReadPacket(uint8_t * message) {
 
 	COMM_PACKET_ID packetId;
@@ -217,36 +216,56 @@ bool VescUart::processReadPacket(uint8_t * message) {
 		break;
 
 		case COMM_CUSTOM_APP_DATA:
-			if(message[index++] != 101 || message[index++] != 1){
+			if(message[index++] != 101){
+				return false;
+			} else if(message[index] == 1){
+				index++;
+				floatData.pidValue = buffer_get_float32_auto(message, &index);
+				floatData.pitch = buffer_get_float32_auto(message, &index);
+				floatData.roll = buffer_get_float32_auto(message, &index);
+				
+				floatData.state = message[index++]; // uint 8
+				floatData.setpointAdjustmentType = floatData.state >> 4;
+				floatData.state = floatData.state & 0b00001111;
+				
+				floatData.switchState = message[index++]; // uint 8
+				floatData.beepReason = floatData.switchState >> 4;
+				floatData.switchState = floatData.switchState & 0b00001111;
+
+				floatData.adc1 = buffer_get_float32_auto(message, &index);
+				floatData.adc2 = buffer_get_float32_auto(message, &index);
+				floatData.floatSetpoint = buffer_get_float32_auto(message, &index);
+				floatData.floatAtr = buffer_get_float32_auto(message, &index);
+				floatData.floatBraketilt = buffer_get_float32_auto(message, &index);
+				floatData.floatTorquetilt = buffer_get_float32_auto(message, &index);
+				floatData.floatTurntilt = buffer_get_float32_auto(message, &index);
+				floatData.floatInputtilt = buffer_get_float32_auto(message, &index);
+				floatData.truePitch = buffer_get_float32_auto(message, &index);
+				floatData.filteredCurrent = buffer_get_float32_auto(message, &index);
+				floatData.floatAccDiff = buffer_get_float32_auto(message, &index);
+				floatData.appliedBoosterCurrent = buffer_get_float32_auto(message, &index);
+				floatData.motorCurrent = buffer_get_float32_auto(message, &index);
+				floatData.throttleVal = buffer_get_float32_auto(message, &index);
+				return true;	
+			} else if(message[index] == 25) {
+				index++;
+				floatData.led_type = message[index++]; // uint 8
+                floatData.led_brightness = message[index++]; // uint 8
+                floatData.led_brightness_idle = message[index++]; // uint 8
+				floatData.led_status_brightness = message[index++]; // uint 8
+				floatData.led_mode = message[index++]; // uint 8
+                floatData.led_mode_idle = message[index++]; // uint 8
+				floatData.led_status_mode = message[index++]; // uint 8
+				floatData.led_status_count = message[index++]; // uint 8
+                floatData.led_forward_count = message[index++]; // uint 8
+                floatData.led_rear_count = message[index++]; // uint 8
+			} else if(message[index] == 29) {
+				index++;
+				floatData.batteryPercent = buffer_get_float32_auto(message, &index);
+			} else {
 				return false;
 			}
-			floatData.pidValue = buffer_get_float32_auto(message, &index);
-			floatData.pitch = buffer_get_float32_auto(message, &index);
-			floatData.roll = buffer_get_float32_auto(message, &index);
 			
-			floatData.state = message[index++]; // uint 8
-			floatData.setpointAdjustmentType = floatData.state >> 4;
-			floatData.state = floatData.state & 0b00001111;
-			
-			floatData.switchState = message[index++]; // uint 8
-			floatData.beepReason = floatData.switchState >> 4;
-			floatData.switchState = floatData.switchState & 0b00001111;
-
-			floatData.adc1 = buffer_get_float32_auto(message, &index);
-			floatData.adc2 = buffer_get_float32_auto(message, &index);
-			floatData.floatSetpoint = buffer_get_float32_auto(message, &index);
-			floatData.floatAtr = buffer_get_float32_auto(message, &index);
-			floatData.floatBraketilt = buffer_get_float32_auto(message, &index);
-			floatData.floatTorquetilt = buffer_get_float32_auto(message, &index);
-			floatData.floatTurntilt = buffer_get_float32_auto(message, &index);
-			floatData.floatInputtilt = buffer_get_float32_auto(message, &index);
-			floatData.truePitch = buffer_get_float32_auto(message, &index);
-			floatData.filteredCurrent = buffer_get_float32_auto(message, &index);
-			floatData.floatAccDiff = buffer_get_float32_auto(message, &index);
-			floatData.appliedBoosterCurrent = buffer_get_float32_auto(message, &index);
-			floatData.motorCurrent = buffer_get_float32_auto(message, &index);
-			floatData.throttleVal = buffer_get_float32_auto(message, &index);
-			return true;
 		break;
 
 		/* case COMM_GET_VALUES_SELECTIVE:
@@ -334,6 +353,54 @@ bool VescUart::getFloatValues(void) {
 	int messageLength = receiveUartMessage(message);
 
 	if (messageLength > 55) {
+		return processReadPacket(message); 
+	}
+	return false;
+}
+
+bool VescUart::getFloatBattery(void) {
+
+	if (debugPort!=NULL){
+		debugPort->println("Command: COMM_CUSTOM_APP_DATA ");
+	}
+
+	int32_t index = 0;
+	int payloadSize = 3;
+	uint8_t payload[payloadSize];
+	payload[index++] = { COMM_CUSTOM_APP_DATA };
+	payload[index++] = 101;
+	payload[index++] = 29; // Get battery
+
+	packSendPayload(payload, payloadSize);
+
+	uint8_t message[256];
+	int messageLength = receiveUartMessage(message);
+
+	if (messageLength > 2) {
+		return processReadPacket(message); 
+	}
+	return false;
+}
+
+bool VescUart::getFloatLeds(void) {
+
+	if (debugPort!=NULL){
+		debugPort->println("Command: COMM_CUSTOM_APP_DATA ");
+	}
+
+	int32_t index = 0;
+	int payloadSize = 3;
+	uint8_t payload[payloadSize];
+	payload[index++] = { COMM_CUSTOM_APP_DATA };
+	payload[index++] = 101;
+	payload[index++] = 25; // Get battery
+
+	packSendPayload(payload, payloadSize);
+
+	uint8_t message[256];
+	int messageLength = receiveUartMessage(message);
+
+	if (messageLength > 10) {
 		return processReadPacket(message); 
 	}
 	return false;
