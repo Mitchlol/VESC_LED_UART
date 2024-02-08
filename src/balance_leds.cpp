@@ -171,7 +171,7 @@ class BalanceLEDs {
                 fw += 12;
             }
         } else if (fw > tw) {
-            if (fw - 12 < tw) {
+            if (fw < 12 || fw - 12 < tw) {
                 fw = tw;
             } else {
                 fw -= 12;
@@ -184,7 +184,7 @@ class BalanceLEDs {
                 fr += 12;
             }
         } else if (fr > tr) {
-            if (fr - 12 < tr) {
+            if (fr < 12 || fr - 12 < tr) {
                 fr = tr;
             } else {
                 fr -= 12;
@@ -197,7 +197,7 @@ class BalanceLEDs {
                 fg += 12;
             }
         } else if (fg > tg) {
-            if (fg - 12 < tg) {
+            if (fg < 12 || fg - 12 < tg) {
                 fg = tg;
             } else {
                 fg -= 12;
@@ -210,7 +210,7 @@ class BalanceLEDs {
                 fb += 12;
             }
         } else if (fb > tb) {
-            if (fb - 12 < tb) {
+            if (fb < 12 || fb - 12 < tb) {
                 fb = tb;
             } else {
                 fb -= 12;
