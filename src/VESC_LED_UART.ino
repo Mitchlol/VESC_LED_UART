@@ -9,9 +9,9 @@ void setup() {
   vesc.setSerialPort(&Serial);
   balanceLEDs.setup();
 
+  // Test data
 //  vesc.data.rpm = 290;
-//  vesc.data.dutyCycleNow = 0.3;
-//  
+//  vesc.data.dutyCycleNow = 0.3; 
 //  vesc.floatData.led_type = 1;
 //  vesc.floatData.led_rear_count = 4;
 //  vesc.floatData.led_forward_count = 4;
