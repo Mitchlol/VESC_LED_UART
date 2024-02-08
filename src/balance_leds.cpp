@@ -72,6 +72,11 @@ class BalanceLEDs {
       
       // TODO: Get real value somehow
       float_conf->fault_adc_half_erpm = 300;
+
+      statusPixels = new Adafruit_NeoPixel{};
+      forwardPixels = new Adafruit_NeoPixel{};
+      backwardPixels = new Adafruit_NeoPixel{};
+      led_data->RGBdata = (uint32_t*)malloc(0);
     }
 
     void populate_clone_objects(VescUart::dataPackage * dataData, VescUart::floatPackage* floatData){
@@ -89,34 +94,40 @@ class BalanceLEDs {
 
         // Strips are actually GRB but i coppied vesc logic that flips it, and want to make minimal edits to the vesc code
         // So we flip it here to unflip it by setting the type to RGB instead of GRB
-        unsigned int pixelType = NEO_RGBW;
+        unsigned int pixelType = NEO_WRGB;
         if(led_data->led_type == 1){
           pixelType = NEO_RGB;
         }
 
-        led_data->led_status_count = min(floatData->led_status_count, 20);
+        statusPixels->clear();
+        statusPixels->show();
+        led_data->led_status_count = floatData->led_status_count;
         if(led_data->led_status_count > 0){
-          statusPixels = new Adafruit_NeoPixel{led_data->led_status_count, LED_PIN_STATUS, pixelType + NEO_KHZ800};
-          statusPixels->begin();
-          statusPixels->setBrightness(255); 
+            statusPixels = new Adafruit_NeoPixel{led_data->led_status_count, LED_PIN_STATUS, pixelType + NEO_KHZ800};
+            statusPixels->begin();
+            statusPixels->setBrightness(255); 
         }
 
-        led_data->led_forward_count = min(floatData->led_forward_count, 40);
+        forwardPixels->clear();
+        forwardPixels->show();
+        led_data->led_forward_count = floatData->led_forward_count;
         if(led_data->led_forward_count > 0){
-          forwardPixels = new Adafruit_NeoPixel{led_data->led_forward_count, LED_PIN_FORWARD, pixelType + NEO_KHZ800};
-          forwardPixels->begin();
-          forwardPixels->setBrightness(255); 
+            forwardPixels = new Adafruit_NeoPixel{led_data->led_forward_count, LED_PIN_FORWARD, pixelType + NEO_KHZ800};
+            forwardPixels->begin();
+            forwardPixels->setBrightness(255); 
         }
 
-        led_data->led_rear_count = min(floatData->led_rear_count, 40);
+        backwardPixels->clear();
+        backwardPixels->show();
+        led_data->led_rear_count = floatData->led_rear_count;
         if(led_data->led_rear_count > 0){
-          backwardPixels = new Adafruit_NeoPixel{led_data->led_rear_count, LED_PIN_BACKWARD, pixelType + NEO_KHZ800};
-          backwardPixels->begin();
-          backwardPixels->setBrightness(255);
+            backwardPixels = new Adafruit_NeoPixel{led_data->led_rear_count, LED_PIN_BACKWARD, pixelType + NEO_KHZ800};
+            backwardPixels->begin();
+            backwardPixels->setBrightness(255);
         }
 
-        
         led_data->ledbuf_len = led_data->led_status_count + led_data->led_forward_count + led_data->led_rear_count + 1;
+        free(led_data->RGBdata);
         led_data->RGBdata = (uint32_t*)malloc(sizeof(uint32_t) * led_data->ledbuf_len);
         for(int i = 0; i < led_data->ledbuf_len; i++){
           led_data->RGBdata[i] = 0;

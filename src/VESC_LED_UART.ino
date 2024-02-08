@@ -12,14 +12,14 @@ void setup() {
   // Test data
 //  vesc.data.rpm = 290;
 //  vesc.data.dutyCycleNow = 0.3; 
-//  vesc.floatData.led_type = 1;
-//  vesc.floatData.led_rear_count = 4;
-//  vesc.floatData.led_forward_count = 4;
-//  vesc.floatData.led_status_count = 4;
+//  vesc.floatData.led_type = 2;
+//  vesc.floatData.led_rear_count = 22;
+//  vesc.floatData.led_forward_count = 22;
+//  vesc.floatData.led_status_count = 0;
 //  vesc.floatData.led_status_brightness = 10;
-//  vesc.floatData.led_brightness = 10;
-//  vesc.floatData.led_brightness_idle = 10;
-//  vesc.floatData.led_mode = 1;
+//  vesc.floatData.led_brightness = 1;
+//  vesc.floatData.led_brightness_idle = 3;
+//  vesc.floatData.led_mode = 3;
 //  vesc.floatData.led_mode_idle = 9;
 //  vesc.floatData.switchState = 1;
 //  vesc.floatData.batteryPercent = 1.0;

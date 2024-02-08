@@ -17,5 +17,5 @@ Pins & stuff are designed to be configured VIA the constants
 1. balance_leds.cpp: pin wiring.
 
 ## Compiling/Installing
-All the required libraries are included, just hit the upload button in Arduino IDE (v1)
+All the required libraries are included, just hit the upload button in PlatformIO
 
