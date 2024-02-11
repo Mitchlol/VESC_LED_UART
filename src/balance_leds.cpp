@@ -9,38 +9,39 @@
 #define LED_PIN_BACKWARD 11
 
 class BalanceLEDs {
-  private:
+    private:
     Adafruit_NeoPixel *statusPixels;
     Adafruit_NeoPixel *forwardPixels;
     Adafruit_NeoPixel *backwardPixels;
 
     // New Vars
     typedef enum {
-      LED_Type_None,
-      LED_Type_RGB,
-      LED_Type_RGBW,
-      LED_Type_External_Module,
+        LED_Type_None,
+        LED_Type_RGB,
+        LED_Type_RGBW,
+        LED_Type_External_Module,
     } LEDType;
 
     struct LEDData {
-      float led_last_updated;
-      uint8_t led_previous_brightness;
-      bool led_latching_direction;
-      uint8_t led_type;
-      uint8_t led_status_count;
-      uint8_t led_forward_count;
-      uint8_t led_rear_count;
-      int ledbuf_len;
+        float led_last_updated;
+        uint8_t led_previous_brightness;
+        bool led_latching_direction;
+        uint8_t led_type;
+        uint8_t led_status_count;
+        uint8_t led_forward_count;
+        uint8_t led_rear_count;
+        int ledbuf_len;
+        uint32_t* RGBdata;
     };
 
     struct float_config {
-      uint8_t led_brightness;
-      uint8_t led_brightness_idle;
-      uint8_t led_mode;
-      uint8_t led_mode_idle;
-      uint8_t led_status_brightness;
-      uint8_t led_status_mode;
-      uint16_t fault_adc_half_erpm;
+        uint8_t led_brightness;
+        uint8_t led_brightness_idle;
+        uint8_t led_mode;
+        uint8_t led_mode_idle;
+        uint8_t led_status_brightness;
+        uint8_t led_status_mode;
+        uint16_t fault_adc_half_erpm;
     };
 
     LEDData* led_data;
@@ -56,96 +57,102 @@ class BalanceLEDs {
   public:
     
     void setup(){
-      // Create objects
-      led_data = (LEDData *) malloc(sizeof(LEDData));
-      float_conf = (float_config *) malloc(sizeof(float_config));
+        // Create objects
+        led_data = (LEDData *) malloc(sizeof(LEDData));
+        float_conf = (float_config *) malloc(sizeof(float_config));
 
-      //Set Defaults
-      led_data->led_last_updated = 0;
-      led_data->led_previous_brightness = 0;
-      led_data->led_latching_direction = false;
-      led_data->led_type = 0;
-      led_data->led_status_count = 0;
-      led_data->led_forward_count = 0;
-      led_data->led_rear_count = 0;
-      
-      // TODO: Get real value somehow
-      float_conf->fault_adc_half_erpm = 300;
+        //Set Defaults
+        led_data->led_last_updated = 0;
+        led_data->led_previous_brightness = 0;
+        led_data->led_latching_direction = false;
+        led_data->led_type = 0;
+        led_data->led_status_count = 0;
+        led_data->led_forward_count = 0;
+        led_data->led_rear_count = 0;
+        
+        // TODO: Get real value somehow
+        float_conf->fault_adc_half_erpm = 300;
 
-      statusPixels = new Adafruit_NeoPixel{};
-      forwardPixels = new Adafruit_NeoPixel{};
-      backwardPixels = new Adafruit_NeoPixel{};
+        statusPixels = new Adafruit_NeoPixel{};
+        forwardPixels = new Adafruit_NeoPixel{};
+        backwardPixels = new Adafruit_NeoPixel{};
+        led_data->RGBdata = (uint32_t*)malloc(0);
     }
 
     void populate_clone_objects(VescUart::dataPackage * dataData, VescUart::floatPackage* floatData){
-      // LED Data Object
-      // NOOP: led_data->led_last_updated;
-      // NOOP: led_data->led_previous_brightness;
-      // NOOP: led_data->led_latching_direction;
+        // LED Data Object
+        // NOOP: led_data->led_last_updated;
+        // NOOP: led_data->led_previous_brightness;
+        // NOOP: led_data->led_latching_direction;
 
-      if(led_data->led_type != floatData->led_type  ||
+        if(led_data->led_type != floatData->led_type  ||
         led_data->led_status_count != floatData->led_status_count ||
         led_data->led_forward_count != floatData->led_forward_count ||
         led_data->led_rear_count != floatData->led_rear_count
-      ){
-        led_data->led_type = floatData->led_type;
+        ){
+            led_data->led_type = floatData->led_type;
 
-        // Strips are actually GRB but i coppied vesc logic that flips it, and want to make minimal edits to the vesc code
-        // So we flip it here to unflip it by setting the type to RGB instead of GRB
-        unsigned int pixelType = NEO_WRGB;
-        if(led_data->led_type == 1){
-          pixelType = NEO_RGB;
+            // Strips are actually GRB but i coppied vesc logic that flips it, and want to make minimal edits to the vesc code
+            // So we flip it here to unflip it by setting the type to RGB instead of GRB
+            unsigned int pixelType = NEO_WRGB;
+            if(led_data->led_type == 1){
+                pixelType = NEO_RGB;
+            }
+
+            statusPixels->clear();
+            statusPixels->show();
+            led_data->led_status_count = floatData->led_status_count;
+            if(led_data->led_status_count > 0){
+                delete statusPixels;
+                statusPixels = new Adafruit_NeoPixel{led_data->led_status_count, LED_PIN_STATUS, pixelType + NEO_KHZ800};
+                statusPixels->begin();
+                statusPixels->setBrightness(255); 
+            }
+
+            forwardPixels->clear();
+            forwardPixels->show();
+            led_data->led_forward_count = floatData->led_forward_count;
+            if(led_data->led_forward_count > 0){
+                delete forwardPixels;
+                forwardPixels = new Adafruit_NeoPixel{led_data->led_forward_count, LED_PIN_FORWARD, pixelType + NEO_KHZ800};
+                forwardPixels->begin();
+                forwardPixels->setBrightness(255); 
+            }
+
+            backwardPixels->clear();
+            backwardPixels->show();
+            led_data->led_rear_count = floatData->led_rear_count;
+            if(led_data->led_rear_count > 0){
+                delete backwardPixels;
+                backwardPixels = new Adafruit_NeoPixel{led_data->led_rear_count, LED_PIN_BACKWARD, pixelType + NEO_KHZ800};
+                backwardPixels->begin();
+                backwardPixels->setBrightness(255);
+            }
+
+            led_data->ledbuf_len = led_data->led_status_count + led_data->led_forward_count + led_data->led_rear_count + 1;
+
+            free(led_data->RGBdata);
+            if(led_data->ledbuf_len < 50){
+                led_data->RGBdata = (uint32_t*)malloc(sizeof(uint32_t) * led_data->ledbuf_len);
+            }
         }
 
-        statusPixels->clear();
-        statusPixels->show();
-        led_data->led_status_count = floatData->led_status_count;
-        if(led_data->led_status_count > 0){
-            delete statusPixels;
-            statusPixels = new Adafruit_NeoPixel{led_data->led_status_count, LED_PIN_STATUS, pixelType + NEO_KHZ800};
-            statusPixels->begin();
-            statusPixels->setBrightness(255); 
-        }
-
-        forwardPixels->clear();
-        forwardPixels->show();
-        led_data->led_forward_count = floatData->led_forward_count;
-        if(led_data->led_forward_count > 0){
-            delete forwardPixels;
-            forwardPixels = new Adafruit_NeoPixel{led_data->led_forward_count, LED_PIN_FORWARD, pixelType + NEO_KHZ800};
-            forwardPixels->begin();
-            forwardPixels->setBrightness(255); 
-        }
-
-        backwardPixels->clear();
-        backwardPixels->show();
-        led_data->led_rear_count = floatData->led_rear_count;
-        if(led_data->led_rear_count > 0){
-            delete backwardPixels;
-            backwardPixels = new Adafruit_NeoPixel{led_data->led_rear_count, LED_PIN_BACKWARD, pixelType + NEO_KHZ800};
-            backwardPixels->begin();
-            backwardPixels->setBrightness(255);
-        }
-
-        led_data->ledbuf_len = led_data->led_status_count + led_data->led_forward_count + led_data->led_rear_count + 1;
-      }
-
-      // Float Conf Object
-      float_conf->led_brightness = floatData->led_brightness;
-      float_conf->led_brightness_idle = floatData->led_brightness_idle;
-      float_conf->led_mode = floatData->led_mode;
-      float_conf->led_mode_idle = floatData->led_mode_idle;
-      float_conf->led_status_brightness = floatData->led_status_brightness;
-      float_conf->led_status_mode = floatData->led_status_mode;
+        // Float Conf Object
+        float_conf->led_brightness = floatData->led_brightness;
+        float_conf->led_brightness_idle = floatData->led_brightness_idle;
+        float_conf->led_mode = floatData->led_mode;
+        float_conf->led_mode_idle = floatData->led_mode_idle;
+        float_conf->led_status_brightness = floatData->led_status_brightness;
+        float_conf->led_status_mode = floatData->led_status_mode;
 
 
-      // Misc vars
-      current_time = millis()/1000.0f;
-      erpm = dataData->rpm; 
-      abs_duty_cycle = abs(dataData->dutyCycleNow);
-      switch_state = floatData->switchState; 
-      float_state = floatData->state;
-      batteryLevel = floatData->batteryPercent; 
+        // Misc vars
+        current_time = millis()/1000.0f;
+        erpm = dataData->rpm; 
+        abs_duty_cycle = abs(dataData->dutyCycleNow);
+        switch_state = floatData->switchState; 
+        float_state = floatData->state;
+        batteryLevel = floatData->batteryPercent; 
     }
 
 
@@ -239,10 +246,13 @@ class BalanceLEDs {
             return;
         }
         if (led >= 0 && led < led_data->ledbuf_len) {
-            if (fade) {
-                //color = led_fade_color(led_data->RGBdata[led], color);
+
+            if(led_data->ledbuf_len < 50){
+                if (fade) {
+                    color = led_fade_color(led_data->RGBdata[led], color);
+                }
+                led_data->RGBdata[led] = color;
             }
-            //led_data->RGBdata[led] = color;
     
             color = led_rgb_to_local(color, brightness, led_data->led_type == 2);
 
