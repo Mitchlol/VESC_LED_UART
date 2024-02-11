@@ -250,6 +250,9 @@ class VescUart
 		  * Uses the class Stream instead of HarwareSerial */
 		Stream* debugPort = NULL;
 
+                uint8_t buffer1[100];
+                uint8_t buffer2[100];
+
 		/**
 		 * @brief      Packs the payload and sends it over Serial
 		 *

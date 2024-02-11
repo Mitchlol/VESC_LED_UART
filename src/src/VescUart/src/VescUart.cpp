@@ -30,7 +30,7 @@ int VescUart::receiveUartMessage(uint8_t * payloadReceived) {
 	uint16_t counter = 0;
 	uint16_t endMessage = 256;
 	bool messageRead = false;
-	uint8_t messageReceived[256];
+	
 	uint16_t lenPayload = 0;
 	
 	uint32_t timeout = millis() + _TIMEOUT; // Defining the timestamp for timeout (100ms before timeout)
@@ -39,15 +39,15 @@ int VescUart::receiveUartMessage(uint8_t * payloadReceived) {
 
 		while (serialPort->available()) {
 
-			messageReceived[counter++] = serialPort->read();
+			buffer1[counter++] = serialPort->read();
 
 			if (counter == 2) {
 
-				switch (messageReceived[0])
+				switch (buffer1[0])
 				{
 					case 2:
-						endMessage = messageReceived[1] + 5; //Payload size + 2 for sice + 3 for SRC and End.
-						lenPayload = messageReceived[1];
+						endMessage = buffer1[1] + 5; //Payload size + 2 for sice + 3 for SRC and End.
+						lenPayload = buffer1[1];
 					break;
 
 					case 3:
@@ -65,12 +65,12 @@ int VescUart::receiveUartMessage(uint8_t * payloadReceived) {
 				}
 			}
 
-			if (counter >= sizeof(messageReceived)) {
+			if (counter >= sizeof(buffer1)) {
 				break;
 			}
 
-			if (counter == endMessage && messageReceived[endMessage - 1] == 3) {
-				messageReceived[endMessage] = 0;
+			if (counter == endMessage && buffer1[endMessage - 1] == 3) {
+				buffer1[endMessage] = 0;
 				if (debugPort != NULL) {
 					debugPort->println("End of message reached!");
 				}
@@ -86,7 +86,7 @@ int VescUart::receiveUartMessage(uint8_t * payloadReceived) {
 	bool unpacked = false;
 
 	if (messageRead) {
-		unpacked = unpackPayload(messageReceived, endMessage, payloadReceived);
+		unpacked = unpackPayload(buffer1, endMessage, payloadReceived);
 	}
 
 	if (unpacked) {
@@ -143,35 +143,34 @@ int VescUart::packSendPayload(uint8_t * payload, int lenPay) {
 
 	uint16_t crcPayload = crc16(payload, lenPay);
 	int count = 0;
-	uint8_t messageSend[256];
 	
 	if (lenPay <= 256)
 	{
-		messageSend[count++] = 2;
-		messageSend[count++] = lenPay;
+		buffer1[count++] = 2;
+		buffer1[count++] = lenPay;
 	}
 	else
 	{
-		messageSend[count++] = 3;
-		messageSend[count++] = (uint8_t)(lenPay >> 8);
-		messageSend[count++] = (uint8_t)(lenPay & 0xFF);
+		buffer1[count++] = 3;
+		buffer1[count++] = (uint8_t)(lenPay >> 8);
+		buffer1[count++] = (uint8_t)(lenPay & 0xFF);
 	}
 
-	memcpy(messageSend + count, payload, lenPay);
+	memcpy(buffer1 + count, payload, lenPay);
 	count += lenPay;
 
-	messageSend[count++] = (uint8_t)(crcPayload >> 8);
-	messageSend[count++] = (uint8_t)(crcPayload & 0xFF);
-	messageSend[count++] = 3;
+	buffer1[count++] = (uint8_t)(crcPayload >> 8);
+	buffer1[count++] = (uint8_t)(crcPayload & 0xFF);
+	buffer1[count++] = 3;
 	// messageSend[count] = NULL;
 	
 	if(debugPort!=NULL){
-		debugPort->print("Package to send: "); serialPrint(messageSend, count);
+		debugPort->print("Package to send: "); serialPrint(buffer1, count);
 	}
 
 	// Sending package
 	if( serialPort != NULL )
-		serialPort->write(messageSend, count);
+		serialPort->write(buffer1, count);
 
 	// Returns number of send bytes
 	return count;
@@ -325,11 +324,10 @@ bool VescUart::getVescValues(uint8_t canId) {
 
 	packSendPayload(payload, payloadSize);
 
-	uint8_t message[256];
-	int messageLength = receiveUartMessage(message);
+	int messageLength = receiveUartMessage(buffer2);
 
 	if (messageLength > 55) {
-		return processReadPacket(message); 
+		return processReadPacket(buffer2); 
 	}
 	return false;
 }
@@ -349,11 +347,10 @@ bool VescUart::getFloatValues(void) {
 
 	packSendPayload(payload, payloadSize);
 
-	uint8_t message[256];
-	int messageLength = receiveUartMessage(message);
+	int messageLength = receiveUartMessage(buffer2);
 
 	if (messageLength > 55) {
-		return processReadPacket(message); 
+		return processReadPacket(buffer2); 
 	}
 	return false;
 }
@@ -373,11 +370,10 @@ bool VescUart::getFloatBattery(void) {
 
 	packSendPayload(payload, payloadSize);
 
-	uint8_t message[256];
-	int messageLength = receiveUartMessage(message);
+	int messageLength = receiveUartMessage(buffer2);
 
 	if (messageLength > 2) {
-		return processReadPacket(message); 
+		return processReadPacket(buffer2); 
 	}
 	return false;
 }
@@ -397,11 +393,10 @@ bool VescUart::getFloatLeds(void) {
 
 	packSendPayload(payload, payloadSize);
 
-	uint8_t message[256];
-	int messageLength = receiveUartMessage(message);
+	int messageLength = receiveUartMessage(buffer2);
 
 	if (messageLength > 10) {
-		return processReadPacket(message); 
+		return processReadPacket(buffer2); 
 	}
 	return false;
 }
